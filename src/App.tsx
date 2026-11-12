@@ -1,4 +1,4 @@
-import { Suspense, use, useState } from "react";
+import { Suspense, use, useReducer, useState } from "react";
 import {
   Alert,
   Box,
@@ -73,7 +73,9 @@ function ManualStateCard() {
       setAlbums(await createAlbumsPromise());
     } catch (reason) {
       setError(
-        reason instanceof Error ? reason.message : "Could not load albums",
+        reason instanceof Error
+          ? `Not Boundary: ${reason.message}`
+          : "Could not load albums",
       );
     } finally {
       setIsLoading(false);
@@ -120,6 +122,13 @@ function App() {
   const [wrappedPromise, setWrappedPromise] = useState<Promise<Album[]> | null>(
     null,
   );
+  const [attempts, incrementAttempt] = useReducer(
+    (
+      state: Record<"async" | "direct" | "wrapped", number>,
+      reader: "async" | "direct" | "wrapped",
+    ) => ({ ...state, [reader]: state[reader] + 1 }),
+    { async: 0, direct: 0, wrapped: 0 },
+  );
 
   return (
     <ThemeProvider theme={theme}>
@@ -164,88 +173,96 @@ function App() {
               gap: 2,
             }}
           >
-            <ErrorBoundary>
-              <Card variant="outlined">
-                <CardContent>
-                  <Stack spacing={1.5}>
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                      Async component (unsupported)
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      This async Client Component can appear to suspend, but
-                      React does not support async Client Components. Use the
-                      explicit state card for the supported no-use pattern.
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      onClick={() => setPromise(createAlbumsPromise())}
-                    >
-                      Load async component
-                    </Button>
+            <Card variant="outlined">
+              <CardContent>
+                <Stack spacing={1.5}>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    Async component (unsupported)
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    This async Client Component can appear to suspend, but React
+                    does not support async Client Components. Use the explicit
+                    state card for the supported no-use pattern.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    onClick={() => {
+                      incrementAttempt("async");
+                      setPromise(createAlbumsPromise());
+                    }}
+                  >
+                    Load async component
+                  </Button>
+                  <ErrorBoundary key={attempts.async}>
                     {promise && (
                       <Suspense fallback={<PendingMessage />}>
                         <NoUseReader promise={promise} />
                       </Suspense>
                     )}
-                  </Stack>
-                </CardContent>
-              </Card>
-            </ErrorBoundary>
+                  </ErrorBoundary>
+                </Stack>
+              </CardContent>
+            </Card>
 
-            <ErrorBoundary>
-              <Card variant="outlined">
-                <CardContent>
-                  <Stack spacing={1.5}>
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                      Direct `use`
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      The component that receives the promise must remember to
-                      unwrap it with React&apos;s `use` API.
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      onClick={() => setDirectPromise(createAlbumsPromise())}
-                    >
-                      Load with use
-                    </Button>
+            <Card variant="outlined">
+              <CardContent>
+                <Stack spacing={1.5}>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    Direct `use`
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    The component that receives the promise must remember to
+                    unwrap it with React&apos;s `use` API.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    onClick={() => {
+                      incrementAttempt("direct");
+                      setDirectPromise(createAlbumsPromise());
+                    }}
+                  >
+                    Load with use
+                  </Button>
+                  <ErrorBoundary key={attempts.direct}>
                     {directPromise && (
                       <Suspense fallback={<PendingMessage />}>
                         <DirectReader promise={directPromise} />
                       </Suspense>
                     )}
-                  </Stack>
-                </CardContent>
-              </Card>
-            </ErrorBoundary>
+                  </ErrorBoundary>
+                </Stack>
+              </CardContent>
+            </Card>
 
-            <ErrorBoundary>
-              <Card variant="outlined">
-                <CardContent>
-                  <Stack spacing={1.5}>
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                      Domain hook wrapper
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      The component asks for albums. `useAlbums` owns the
-                      promise unwrapping, so callers don&apos;t need to remember
-                      it.
-                    </Typography>
-                    <Button
-                      variant="outlined"
-                      onClick={() => setWrappedPromise(createAlbumsPromise())}
-                    >
-                      Load through useAlbums
-                    </Button>
+            <Card variant="outlined">
+              <CardContent>
+                <Stack spacing={1.5}>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    Domain hook wrapper
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    The component asks for albums. `useAlbums` owns the promise
+                    unwrapping, so callers don&apos;t need to remember it.
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      incrementAttempt("wrapped");
+                      setWrappedPromise(createAlbumsPromise());
+                    }}
+                  >
+                    Load through useAlbums
+                  </Button>
+                  <ErrorBoundary key={attempts.wrapped}>
                     {wrappedPromise && (
                       <Suspense fallback={<PendingMessage />}>
                         <HookReader promise={wrappedPromise} />
                       </Suspense>
                     )}
-                  </Stack>
-                </CardContent>
-              </Card>
-            </ErrorBoundary>
+                  </ErrorBoundary>
+                </Stack>
+              </CardContent>
+            </Card>
 
             <ErrorBoundary>
               <ManualStateCard />
