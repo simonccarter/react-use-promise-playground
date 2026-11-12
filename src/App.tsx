@@ -58,6 +58,48 @@ function HookReader({ promise }: { promise: Promise<Album[]> }) {
   return <AlbumList albums={albums} />;
 }
 
+function ManualStateCard() {
+  const [albums, setAlbums] = useState<Album[] | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function loadAlbums() {
+    setIsLoading(true);
+    setAlbums(null);
+    setError(null);
+
+    try {
+      setAlbums(await createAlbumsPromise());
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not load albums");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  return (
+    <Card variant="outlined">
+      <CardContent>
+        <Stack spacing={1.5}>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            Explicit state (supported)
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Await in the click handler, then manage loading, error, and data
+            state directly. No Suspense boundary is involved.
+          </Typography>
+          <Button variant="outlined" onClick={loadAlbums} disabled={isLoading}>
+            Load with state
+          </Button>
+          {isLoading && <PendingMessage />}
+          {error && <Alert severity="error">{error}</Alert>}
+          {albums && <AlbumList albums={albums} />}
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+}
+
 function PendingMessage() {
   return (
     <Stack direction="row" spacing={1.5} sx={{ py: 3, alignItems: "center" }}>
@@ -76,7 +118,7 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Container maxWidth="md" sx={{ py: { xs: 4, md: 8 } }}>
+      <Container maxWidth="xl" sx={{ py: { xs: 4, md: 8 } }}>
         <Stack spacing={3}>
           <Box>
             <Typography variant="overline" color="primary.main" sx={{ fontWeight: 800 }}>
@@ -102,7 +144,7 @@ function App() {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr 1fr" },
+              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr", xl: "repeat(4, 1fr)" },
               gap: 2,
             }}
           >
@@ -110,17 +152,18 @@ function App() {
               <CardContent>
                 <Stack spacing={1.5}>
                   <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                    No `use`
+                    Async component (unsupported)
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    The component that receives the promise must remember to
-                    unwrap it with React&apos;s `use` API.
+                    This async Client Component can appear to suspend, but
+                    React does not support async Client Components. Use the
+                    explicit state card for the supported no-use pattern.
                   </Typography>
                   <Button
                     variant="contained"
                     onClick={() => setPromise(createAlbumsPromise())}
                   >
-                    Load without use
+                    Load async component
                   </Button>
                   {promise && (
                     <Suspense fallback={<PendingMessage />}>
@@ -180,6 +223,7 @@ function App() {
                 </Stack>
               </CardContent>
             </Card>
+            <ManualStateCard />
           </Box>
 
           <Alert severity="warning">
