@@ -43,6 +43,11 @@ function AlbumList({ albums }: { albums: Album[] }) {
   );
 }
 
+async function NoUseReader({ promise }: { promise: Promise<Album[]> }) {
+  const albums = await promise
+  return <AlbumList albums={albums} />;
+}
+
 function DirectReader({ promise }: { promise: Promise<Album[]> }) {
   const albums = use(promise);
   return <AlbumList albums={albums} />;
@@ -63,6 +68,7 @@ function PendingMessage() {
 }
 
 function App() {
+  const [promise, setPromise] = useState<Promise<Album[]> | null>(null);
   const [directPromise, setDirectPromise] = useState<Promise<Album[]> | null>(null);
   const [wrappedPromise, setWrappedPromise] =
     useState<Promise<Album[]> | null>(null);
@@ -91,13 +97,40 @@ function App() {
             pending, Suspense shows the fallback below.
           </Alert>
 
+
+
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr 1fr" },
               gap: 2,
             }}
           >
+            <Card variant="outlined">
+              <CardContent>
+                <Stack spacing={1.5}>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    No `use`
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    The component that receives the promise must remember to
+                    unwrap it with React&apos;s `use` API.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    onClick={() => setPromise(createAlbumsPromise())}
+                  >
+                    Load without use
+                  </Button>
+                  {promise && (
+                    <Suspense fallback={<PendingMessage />}>
+                      <NoUseReader promise={promise} />
+                    </Suspense>
+                  )}
+                </Stack>
+              </CardContent>
+            </Card>
+
             <Card variant="outlined">
               <CardContent>
                 <Stack spacing={1.5}>
