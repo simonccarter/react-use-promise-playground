@@ -15,6 +15,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { createAlbumsPromise, type Album } from "./data/albums";
 import { useAlbums } from "./hooks/useAlbums";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { usePromise } from "./hooks/usePromise";
 
 const theme = createTheme({
   palette: {
@@ -57,6 +58,10 @@ function DirectReader({ promise }: { promise: Promise<Album[]> }) {
 function HookReader({ promise }: { promise: Promise<Album[]> }) {
   const albums = useAlbums(promise);
   return <AlbumList albums={albums} />;
+}
+
+function promiseWrapper({ promise }: { promise: Promise<Album[]> }) {
+  return usePromise(promise);
 }
 
 function ManualStateCard() {
